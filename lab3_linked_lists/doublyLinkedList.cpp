@@ -24,30 +24,23 @@ Node<T>* insertAfter(LinkedList<T>& list, Node<T>* node, T value) {
     Node<T>* newNode = new Node<T>(value);
 
     if (node == nullptr) {
-        // Insert at the beginning
         newNode->nextNode = list.firstNode;
         if (list.firstNode != nullptr) {
             list.firstNode->prevNode = newNode;
         }
         list.firstNode = newNode;
-
-        // If the list was empty, update the lastNode pointer
-        if (list.lastNode == nullptr) {
-            list.lastNode = newNode;
-        }
     } else {
-        // Insert after the given node
         newNode->nextNode = node->nextNode;
         newNode->prevNode = node;
         if (node->nextNode != nullptr) {
             node->nextNode->prevNode = newNode;
         }
         node->nextNode = newNode;
+    }
 
-        // If the given node was the last node, update the lastNode pointer
-        if (node == list.lastNode) {
-            list.lastNode = newNode;
-        }
+    // If the list was empty or the given node was the last node, update the lastNode pointer
+    if (list.lastNode == nullptr || node == list.lastNode) {
+        list.lastNode = newNode;
     }
 
     list.size++;
@@ -90,50 +83,41 @@ Node<T>* insertBefore(LinkedList<T>& list, Node<T>* node, T value) {
 }
 
 template<typename T>
-struct FindNodeResult {
-    Node<T>* foundNode;
-    Node<T>* prevNode;
+Node<T>* insertFront(LinkedList<T>& list, T value) {
+    return insertAfter(list, static_cast<Node<int>*>(nullptr), value);
+}
 
-    FindNodeResult(Node<T>* found = nullptr, Node<T>* prev = nullptr)
-        : foundNode(found), prevNode(prev) {}
-};
-
-// find function
 template<typename T>
-FindNodeResult<T> find(LinkedList<T>& list, T value) {
+Node<T>* find(LinkedList<T>& list, T value) {
     Node<T>* current = list.firstNode;
 
     while (current != nullptr) {
         if (current->value == value) {
-            return FindNodeResult<T>(current, current->prevNode);
+            return current;
         }
         current = current->nextNode;
     }
 
-    return FindNodeResult<T>(nullptr, nullptr);
+    return nullptr;
 }
 
 template<typename T>
 void remove(LinkedList<T>& list, Node<T>* node) {
-    if (node == nullptr) {
-        return;
-    }
+    assert(node != nullptr && "Node to be removed cannot be null");
 
     if (node->prevNode != nullptr) {
         node->prevNode->nextNode = node->nextNode;
     } else {
-        // Node is the first node
         list.firstNode = node->nextNode;
     }
 
     if (node->nextNode != nullptr) {
         node->nextNode->prevNode = node->prevNode;
     } else {
-        // Node is the last node
         list.lastNode = node->prevNode;
     }
 
-    delete node; // Free the memory
+    delete node;
     list.size--;
 }
 
@@ -154,32 +138,21 @@ void assertNoCycles(LinkedList<T>& list) {
 int main() {
     LinkedList<int> list;
 
-    Node<int>* first = new Node<int>(10);
-    list.firstNode = first;
-    list.lastNode = first;
-    list.size++;
+    Node<int>* first = insertFront(list, 10);
+    Node<int>* second = insertAfter(list, first, 5);
+    insertAfter(list, second, 20);
+    insertBefore(list, first, 15);
 
-    // insertAfter and insertBefore for subsequent operations
-    Node<int>* second = insertAfter(list, first, 20);  // Insert 20 after 10
-    insertAfter(list, first, 15);                     // Insert 15 after 10
-    insertBefore(list, first, 5);                     // Insert 5 before 10
-    insertBefore(list, list.lastNode, 25);            // Insert 25 before the last node
+    Node<int>* result = find(list, 10);
+    assert(result != nullptr && "Cannot find node with this value");
+    std::cout << "Found value: " << result->value << "\n";
+    assert(result->prevNode != nullptr && "prev node is null");
+    std::cout << "Previous node to found node: " << result->prevNode->value << "\n";
+    
+    remove(list, first);
 
-    // Test find
-    auto result = find(list, 15);
-    if (result.foundNode) {
-        std::cout << "Found value: " << result.foundNode->value << "\n";
-    } else {
-        std::cout << "Value not found\n";
-    }
-
-    // Test remove
-    remove(list, second); // Remove the node with value 20
-
-    // Test assertNoCycles
     assertNoCycles(list);
 
-    // Print the list
     Node<int>* current = list.firstNode;
     while (current != nullptr) {
         std::cout << current->value << " ";
